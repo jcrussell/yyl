@@ -19,8 +19,8 @@ import (
 type Rating struct {
 	Number int
 	Date   time.Time
-	Value  int
-	Max    int
+	Value  float32
+	Max    float32
 
 	FormattedDate string
 }
@@ -40,7 +40,7 @@ type Stats struct {
 
 	Weekdays      []int
 	WeekdayRatios []float32
-	Ratings       []int
+	Ratings       []float32
 	RatingRatios  []float32
 
 	FormattedLongest string
@@ -132,15 +132,17 @@ func readRatings(fname string) []Rating {
 			r.FormattedDate = r.Date.Format("Mon Jan 2 2006")
 		}
 
-		r.Value, err = strconv.Atoi(record[2])
+		tf, err := strconv.ParseFloat(record[2], 32)
 		if err != nil {
 			log.Fatal(err)
 		}
+		r.Value = float32(tf)
 
-		r.Max, err = strconv.Atoi(record[3])
+		tf, err = strconv.ParseFloat(record[3], 32)
 		if err != nil {
 			log.Fatal(err)
 		}
+		r.Max = float32(tf)
 
 		ratings = append(ratings, r)
 	}
@@ -192,10 +194,10 @@ func main() {
 			// compute frequency of ratings
 			if s.Ratings == nil {
 				// assume each has the same max
-				s.Ratings = make([]int, rating.Max+1)
+				s.Ratings = make([]float32, int(rating.Max+1))
 			}
 
-			s.Ratings[rating.Value] += 1
+			s.Ratings[int(rating.Value)] += 1
 
 			// some don't have dates
 			if !rating.Date.IsZero() {
