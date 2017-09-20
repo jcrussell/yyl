@@ -33,6 +33,7 @@ type MenuItem struct {
 }
 
 type Stats struct {
+	HasDate      bool
 	MaxPerWeek   int
 	Longest      time.Duration
 	LongestAfter string
@@ -116,33 +117,32 @@ func readRatings(fname string) []Rating {
 			log.Fatalf("invalid record in %v", fname)
 		}
 
-		i, err := strconv.Atoi(record[0])
+		r := Rating{}
+
+		r.Number, err = strconv.Atoi(record[0])
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		t, err := time.Parse("20060102", record[1])
+		if record[1] != "" {
+			r.Date, err = time.Parse("20060102", record[1])
+			if err != nil {
+				log.Fatal(err)
+			}
+			r.FormattedDate = r.Date.Format("Mon Jan 2 2006")
+		}
+
+		r.Value, err = strconv.Atoi(record[2])
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		rating, err := strconv.Atoi(record[2])
+		r.Max, err = strconv.Atoi(record[3])
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		max, err := strconv.Atoi(record[3])
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		ratings = append(ratings, Rating{
-			Number:        i,
-			Date:          t,
-			Value:         rating,
-			Max:           max,
-			FormattedDate: t.Format("Mon Jan 2 2006"),
-		})
+		ratings = append(ratings, r)
 	}
 
 	return ratings
@@ -186,8 +186,8 @@ func main() {
 				}
 			}
 
-			// compute frequency plots for day of the week
-			s.Weekdays[rating.Date.Weekday()] += 1
+			// number of entries
+			count += 1
 
 			// compute frequency of ratings
 			if s.Ratings == nil {
@@ -197,27 +197,33 @@ func main() {
 
 			s.Ratings[rating.Value] += 1
 
-			count += 1
+			// some don't have dates
+			if !rating.Date.IsZero() {
+				// compute frequency plots for day of the week
+				s.Weekdays[rating.Date.Weekday()] += 1
 
-			if _, v := rating.Date.ISOWeek(); v == week {
-				weekcount += 1
-			} else {
-				if weekcount > s.MaxPerWeek {
-					s.MaxPerWeek = weekcount
+				if _, v := rating.Date.ISOWeek(); v == week {
+					weekcount += 1
+				} else {
+					if weekcount > s.MaxPerWeek {
+						s.MaxPerWeek = weekcount
+					}
+					week = v
+					weekcount = 1
 				}
-				week = v
-				weekcount = 1
-			}
 
-			if prev.IsZero() {
+				if prev.IsZero() {
+					prev = rating.Date
+				}
+				if v := rating.Date.Sub(prev); v > s.Longest {
+					s.Longest = v
+					s.LongestAfter = name
+				}
+
 				prev = rating.Date
-			}
-			if v := rating.Date.Sub(prev); v > s.Longest {
-				s.Longest = v
-				s.LongestAfter = name
-			}
 
-			prev = rating.Date
+				s.HasDate = true
+			}
 		}
 
 		s.WeekdayRatios = make([]float32, len(s.Weekdays))
@@ -258,7 +264,7 @@ div.item {
 div.ratings {
 	padding: 5px;
 }
-hr.clear {
+hr.clear, br.clear {
 	clear: both;
 }
 
@@ -327,9 +333,14 @@ the Yin Yin menu, in order, in less than a year. Three men emerged, victorious.
 	<h3>#{{.Number}}: {{.Name}}</h3>
 	<img src="img/{{ printf "%02d" .Number}}.jpg" title="{{.Name}}" />
 	<div class="ratings">
-	{{ range $who, $rating := .Ratings }}
-		<span>{{ $who }}: {{ $rating.Value }}/{{ $rating.Max }} on {{ $rating.FormattedDate }}</span>
-	{{ end }}
+		<ul>
+		{{- range $who, $rating := .Ratings }}
+			<li>
+				{{- $who }}: {{ $rating.Value }}/{{ $rating.Max }}
+				{{- if not $rating.Date.IsZero }} on {{ $rating.FormattedDate }}{{ end -}}
+			</li>
+		{{- end }}
+		</ul>
 	</div>
 	</div>
 {{ end }}
@@ -342,21 +353,23 @@ the Yin Yin menu, in order, in less than a year. Three men emerged, victorious.
 {{ range $who, $stats := .Stats }}
 	<h3>{{ $who }}</h3>
 
-	<p>Most visits in a week: {{ .MaxPerWeek }}</p>
-	<p>Longest time between YYLs: {{ .FormattedLongest }} after {{ .LongestAfter }}</p>
+	{{ if .HasDate }}
+		<p>Most visits in a week: {{ .MaxPerWeek }}</p>
+		<p>Longest time between YYLs: {{ .FormattedLongest }} after {{ .LongestAfter }}</p>
 
-	<div class="chart">
-	<h4>Day of Week</h4>
-	{{ range $k, $v := .WeekdayRatios }}
-		<div class="progress-bar">
-			<div class="progress-track">
-				<div class="progress-fill">
-					<span>{{ printf "%2.f" $v }}%</span>
+		<div class="chart">
+		<h4>Day of Week</h4>
+		{{ range $k, $v := .WeekdayRatios }}
+			<div class="progress-bar">
+				<div class="progress-track">
+					<div class="progress-fill">
+						<span>{{ printf "%2.f" $v }}%</span>
+					</div>
 				</div>
 			</div>
+		{{ end }}
 		</div>
 	{{ end }}
-	</div>
 
 	<div class="chart">
 	<h4>Rating</h4>
@@ -371,7 +384,7 @@ the Yin Yin menu, in order, in less than a year. Three men emerged, victorious.
 	{{ end }}
 	</div>
 
-<hr class="clear" />
+	<br class="clear" />
 {{ end }}
 
 </div>
