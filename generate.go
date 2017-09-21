@@ -328,7 +328,20 @@ the Yin Yin menu, in order, in less than a year. Half-way through, one moved
 away. The remaining three carried on and emerged as men, victorious.
 </p>
 
+<p>
+This page documents the results.
+</p>
+
 <h2>Ratings</h2>
+<p>
+Each diner applied a rating system according to his own preference. In all cases, a higher number is better.
+</p>
+<ul>
+<li>Devin: 0, indicating "would not eat again", or 1, indicating "would eat again".
+<li>Evan: A decimal number between 1 and 5
+<li>John: A decimal number between 1 and 5. A score of 0 indicates that John did not try the dish before moving.
+<li>Jon: An integer number between 1 and 5.
+</ul>
 
 <div id="items">
 {{ range .Menu }}
