@@ -323,8 +323,9 @@ $(document).ready(function() {
 <h1>Year of the YYL</h1>
 
 <p>
-In 2015, three boys decided to embark on an epic challenge: eat all 40 items on
-the Yin Yin menu, in order, in less than a year. Three men emerged, victorious.
+In 2015, four boys decided to embark on an epic challenge: eat all 40 items on
+the Yin Yin menu, in order, in less than a year. Half-way through, one moved
+away. The remaining three carried on and emerged as men, victorious.
 </p>
 
 <h2>Ratings</h2>
